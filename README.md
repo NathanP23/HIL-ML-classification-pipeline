@@ -18,12 +18,13 @@ A human-in-the-loop machine learning system for automated text classification us
 
 2. **Create virtual environment**
    ```bash
-   python -m venv venv
+   python3 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install dependencies**
    ```bash
+   pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
@@ -35,7 +36,12 @@ A human-in-the-loop machine learning system for automated text classification us
 
 5. **Run the application**
    ```bash
-   python main.py
+   python3 main.py
+   ```
+   
+6. **Deactivate virtual environment**
+   ```bash
+   deactivate
    ```
 
 ## ⚙️ Configuration
