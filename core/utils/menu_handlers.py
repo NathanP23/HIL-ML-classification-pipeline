@@ -301,7 +301,13 @@ def run_excel_export_menu():
         
         if choice == "1":
             try:
-                excel_path = export_latest_bulk_results(include_manual_labels=False)
+                sort_choice = input("Sort by text length? (Y/n): ").strip().lower()
+                sort_by_length = sort_choice != 'n'
+                
+                length_col_choice = input("Include text length column? (y/N): ").strip().lower()
+                include_length_column = length_col_choice == 'y'
+                
+                excel_path = export_latest_bulk_results(include_manual_labels=False, sort_by_length=sort_by_length, include_length_column=include_length_column)
                 if excel_path:
                     print(f"✅ Bulk results exported to Excel")
                     print(f"💡 You can now edit values manually in Excel")
@@ -310,7 +316,13 @@ def run_excel_export_menu():
         
         elif choice == "2":
             try:
-                excel_path = export_latest_bulk_results(include_manual_labels=True)
+                sort_choice = input("Sort by text length? (Y/n): ").strip().lower()
+                sort_by_length = sort_choice != 'n'
+                
+                length_col_choice = input("Include text length column? (y/N): ").strip().lower()
+                include_length_column = length_col_choice == 'y'
+                
+                excel_path = export_latest_bulk_results(include_manual_labels=True, sort_by_length=sort_by_length, include_length_column=include_length_column)
                 if excel_path:
                     print(f"✅ Combined bulk + manual results exported to Excel")
                     print(f"💡 Source column shows manual vs model classifications")
@@ -320,7 +332,13 @@ def run_excel_export_menu():
         
         elif choice == "3":
             try:
-                excel_path = export_manual_labels()
+                sort_choice = input("Sort by text length? (Y/n): ").strip().lower()
+                sort_by_length = sort_choice != 'n'
+                
+                length_col_choice = input("Include text length column? (y/N): ").strip().lower()
+                include_length_column = length_col_choice == 'y'
+                
+                excel_path = export_manual_labels(sort_by_length=sort_by_length, include_length_column=include_length_column)
                 if excel_path:
                     print(f"✅ Manual labels exported to Excel")
                     print(f"💡 You can now edit values manually in Excel")
@@ -335,8 +353,12 @@ def run_excel_export_menu():
                     output_path = output_path if output_path else None
                     
                     include_manual = input("Include manual labels? (y/N): ").strip().lower() == 'y'
+                    sort_choice = input("Sort by text length? (Y/n): ").strip().lower()
+                    sort_by_length = sort_choice != 'n'
+                    length_col_choice = input("Include text length column? (y/N): ").strip().lower()
+                    include_length_column = length_col_choice == 'y'
                     
-                    excel_path = convert_json_to_excel_rtl(json_path, output_path, include_manual=include_manual)
+                    excel_path = convert_json_to_excel_rtl(json_path, output_path, include_manual=include_manual, sort_by_length=sort_by_length, include_length_column=include_length_column)
                     print(f"✅ JSON exported to Excel: {excel_path}")
                     print(f"💡 Features: RTL layout, freeze panes, source tracking")
                 else:

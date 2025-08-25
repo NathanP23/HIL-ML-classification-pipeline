@@ -27,7 +27,7 @@ def _load_manual_labels():
     return None
 
 
-def convert_json_to_excel_rtl(json_path, output_path=None, include_manual=False, source_info=None):
+def convert_json_to_excel_rtl(json_path, output_path=None, include_manual=False, source_info=None, sort_by_length=False, include_length_column=False):
     """
     Convert JSON classification results to Excel format with RTL and color formatting
     
@@ -36,6 +36,8 @@ def convert_json_to_excel_rtl(json_path, output_path=None, include_manual=False,
         output_path: Optional output Excel file path
         include_manual: Whether to include manual labels in the export
         source_info: Dict mapping record IDs to their source ('manual', 'model', 'previously_manual')
+        sort_by_length: Whether to sort records by text content length (smallest first)
+        include_length_column: Whether to include text length as a column in Excel
     
     Returns:
         Path to created Excel file
@@ -67,6 +69,11 @@ def convert_json_to_excel_rtl(json_path, output_path=None, include_manual=False,
             'id': record.get('id', ''),
             'text_content': record.get('text_content', '')
         }
+        
+        # Add text length column if requested
+        if include_length_column:
+            row['text_length'] = len(record.get('text_content', ''))
+        
         # Add category values (0/1)
         for category in ALL_LABELS:
             row[category] = record.get(category, 0)
@@ -82,11 +89,25 @@ def convert_json_to_excel_rtl(json_path, output_path=None, include_manual=False,
     
     df = pd.DataFrame(rows)
     
+    # Sort by text length if requested
+    if sort_by_length:
+        print("🔤 Sorting records by text length (shortest first)...")
+        if not include_length_column:
+            # Add temporary length column for sorting only
+            df['temp_length'] = df['text_content'].str.len()
+            df = df.sort_values('temp_length', ascending=True).drop('temp_length', axis=1)
+        else:
+            # Use existing length column for sorting
+            df = df.sort_values('text_length', ascending=True)
+        print(f"✅ Sorted {len(df)} records by text length")
+    
     # Generate output filename if not provided
     if output_path is None:
         base_name = os.path.splitext(os.path.basename(json_path))[0]
         include_suffix = "_with_manual" if include_manual else ""
-        output_path = f"{base_name}{include_suffix}_excel_export.xlsx"
+        sort_suffix = "_sorted_by_length" if sort_by_length else ""
+        length_suffix = "_with_length_col" if include_length_column else ""
+        output_path = f"{base_name}{include_suffix}{sort_suffix}{length_suffix}_excel_export.xlsx"
     
     # Save to Excel with RTL and enhanced formatting
     print(f"💾 Saving to: {output_path}")
@@ -99,12 +120,20 @@ def convert_json_to_excel_rtl(json_path, output_path=None, include_manual=False,
         # Set RTL (Right-to-Left) reading order
         ws.sheet_view.rightToLeft = True
 
-        # Add freeze panes: freeze after headers (row 1) and after text_content (column C)
-        ws.freeze_panes = 'C2'  # Freeze at column C, row 2
+        # Determine column layout based on included columns
+        text_col_index = 2  # B column (1-indexed)
+        length_col_index = 3 if include_length_column else None  # C column if included
+        categories_start_col = 4 if include_length_column else 3  # Categories start column
+        
+        # Add freeze panes: freeze after text_content column
+        freeze_col_letter = get_column_letter(categories_start_col)
+        ws.freeze_panes = f'{freeze_col_letter}2'
         
         # Column widths
         ws.column_dimensions['A'].width = 12   # ID column
         ws.column_dimensions['B'].width = 100  # text column
+        if include_length_column:
+            ws.column_dimensions['C'].width = 10   # text length column
         
         # Color fills and alignments
         green_fill = PatternFill(start_color='90EE90', end_color='90EE90', fill_type='solid')     # Light green
@@ -113,9 +142,9 @@ def convert_json_to_excel_rtl(json_path, output_path=None, include_manual=False,
         rtl_alignment = Alignment(horizontal='right', readingOrder=2)  # RTL alignment
         center_alignment = Alignment(horizontal='center')
         
-        # Category columns - format and color (columns C to C+16)
+        # Category columns - format and color
         for i, category in enumerate(ALL_LABELS):
-            col_letter = get_column_letter(i + 3)  # Start from column C (3rd column)
+            col_letter = get_column_letter(i + categories_start_col)  # Dynamic start based on layout
             ws.column_dimensions[col_letter].width = 8
             
             # Color code the category values (starting from row 2, after header)
@@ -130,7 +159,7 @@ def convert_json_to_excel_rtl(json_path, output_path=None, include_manual=False,
                     cell.fill = red_fill
         
         # Classification source column (last column)
-        source_col_letter = get_column_letter(len(ALL_LABELS) + 3)  # After all categories
+        source_col_letter = get_column_letter(len(ALL_LABELS) + categories_start_col)  # After all categories
         ws.column_dimensions[source_col_letter].width = 20
         
         # Color code source column
@@ -152,6 +181,12 @@ def convert_json_to_excel_rtl(json_path, output_path=None, include_manual=False,
             cell = ws[f'B{row_idx}']
             cell.alignment = rtl_alignment
         
+        # Format text length column if included (column C)
+        if include_length_column:
+            for row_idx in range(2, len(data) + 2):
+                cell = ws[f'C{row_idx}']
+                cell.alignment = center_alignment
+        
         # Make header row bold and styled
         header_font = Font(bold=True, size=11)
         header_fill = PatternFill(start_color='E0E0E0', end_color='E0E0E0', fill_type='solid')  # Light gray
@@ -164,7 +199,14 @@ def convert_json_to_excel_rtl(json_path, output_path=None, include_manual=False,
             header_cell.alignment = center_alignment
     
     print(f"🎉 Excel created successfully!")
-    print(f"📊 Format: {len(data)} rows × {len(ALL_LABELS) + 2} columns")
+    total_cols = len(ALL_LABELS) + 3  # id, text_content, classification_source
+    if include_length_column:
+        total_cols += 1  # Add text_length column
+    print(f"📊 Format: {len(data)} rows × {total_cols} columns")
+    if sort_by_length:
+        print(f"🔤 Sorted: Records arranged by text length (shortest first)")
+    if include_length_column:
+        print(f"📏 Length: Text length column included")
     print(f"📁 File: {output_path}")
     
     return output_path
@@ -195,7 +237,7 @@ def show_excel_export_summary(data, category_cols):
     print(f"Average classifications per record: {avg_classifications:.2f}")
 
 
-def export_latest_bulk_results(include_manual_labels=False):
+def export_latest_bulk_results(include_manual_labels=False, sort_by_length=False, include_length_column=False):
     """Export latest bulk classification results with optional manual labels"""
     title = "EXPORT LATEST BULK RESULTS" + (" + MANUAL LABELS" if include_manual_labels else "")
     print(f"🚀 {title} TO EXCEL")
@@ -242,7 +284,9 @@ def export_latest_bulk_results(include_manual_labels=False):
         excel_path = convert_json_to_excel_rtl(
             latest_file, 
             include_manual=include_manual_labels,
-            source_info=source_info
+            source_info=source_info,
+            sort_by_length=sort_by_length,
+            include_length_column=include_length_column
         )
         
         # Load data for summary
@@ -259,6 +303,10 @@ def export_latest_bulk_results(include_manual_labels=False):
         print(f"\n🎉 BULK RESULTS EXPORTED TO EXCEL!")
         print(f"   📁 Excel file: {excel_path}")
         print(f"   📊 Total records: {total_records}")
+        if sort_by_length:
+            print(f"   🔤 Sorting: Records sorted by text length (shortest first)")
+        if include_length_column:
+            print(f"   📏 Length: Text length column included")
         print(f"   🎨 Features: RTL layout, freeze panes, source tracking")
         print(f"   🎨 Color coding: Green=1, Red=0, Yellow=source column")
         
@@ -272,7 +320,7 @@ def export_latest_bulk_results(include_manual_labels=False):
         return None
 
 
-def export_manual_labels():
+def export_manual_labels(sort_by_length=False, include_length_column=False):
     """Export manual labels to Excel"""
     print("🚀 EXPORT MANUAL LABELS TO EXCEL")
     print("=" * 40)
@@ -293,7 +341,7 @@ def export_manual_labels():
     
     try:
         # Convert to Excel
-        excel_path = convert_json_to_excel_rtl(latest_file)
+        excel_path = convert_json_to_excel_rtl(latest_file, sort_by_length=sort_by_length, include_length_column=include_length_column)
         
         # Load data for summary
         with open(latest_file, 'r', encoding='utf-8') as f:
@@ -303,6 +351,10 @@ def export_manual_labels():
         
         print(f"\n🎉 MANUAL LABELS EXPORTED TO EXCEL!")
         print(f"   📁 Excel file: {excel_path}")
+        if sort_by_length:
+            print(f"   🔤 Sorting: Records sorted by text length (shortest first)")
+        if include_length_column:
+            print(f"   📏 Length: Text length column included")
         print(f"   🎨 Features: RTL layout, color coding (green=1, red=0)")
         
         return excel_path
