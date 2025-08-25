@@ -434,15 +434,18 @@ project/
 │   │   │   └── classify_batch_with_api(batch, client, model, max_examples) -> tuple
 │   │   │
 │   │   ├── label_manager.py      # Label management and ID creation
-│   │   │   ├── prepare_for_labeling(df: DataFrame) -> tuple  # Add stable IDs, load existing labels
-│   │   │   ├── create_stable_ids(df: DataFrame) -> DataFrame # Generate MD5 hash IDs from content
-│   │   │   ├── load_labeled_ids() -> set                    # Extract already labeled ID set
-│   │   │   └── update_master_labels(file_path: str) -> list # Integrate corrections into training dataset
+│   │   │   ├── create_stable_ids(df) -> DataFrame           # Generate MD5 hash IDs from content
+│   │   │   ├── load_labeled_ids(labeled_json_file=None) -> set # Extract already labeled ID set
+│   │   │   ├── save_api_predictions(records) -> None        # Save raw API predictions
+│   │   │   ├── update_master_labels(last_labeled_json, master_json_file=None) -> list # Integrate corrections
+│   │   │   └── prepare_for_labeling(all_df, labeled_json_file=None) -> tuple # Add stable IDs, load existing labels
 │   │   │
 │   │   └── prompt_builder.py     # Few-shot prompt creation
-│   │       ├── create_system_message_with_examples(max_examples: int) -> str # Build few-shot system prompt
+│   │       ├── create_system_message_with_examples(labeled_json_file=None, max_examples=30) -> str # Build few-shot system prompt
+│   │       ├── create_baseline_system_message() -> str      # Create baseline system message without examples
+│   │       ├── create_leave_one_out_system_message(excluded_id, max_examples=30) -> str # System message excluding specific ID
 │   │       ├── load_existing_examples() -> list             # Load training examples from master labels
-│   │       └── format_examples_for_prompt(examples: list) -> str # Format examples for API prompt
+│   │       └── format_examples_for_prompt(examples, max_examples=30) -> str # Format examples for API prompt
 │   │
 │   ├── models/              # Model and evaluation modules
 │   │   ├── bulk_classifier.py    # Bulk classification functionality
