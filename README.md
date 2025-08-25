@@ -12,7 +12,7 @@ A human-in-the-loop machine learning system for automated text classification us
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/NathanP23/HIL-ML-classification-pipeline.git
    cd HIL-ML-classification-pipeline
    ```
 
