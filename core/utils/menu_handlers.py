@@ -45,7 +45,6 @@ def load_from_anonymized_csv():
 	"""Load data from already anonymized CSV files"""
 	import pandas as pd
 	
-	prefix = get_tree_prefix()
 	
 	anonymized_dir = PATHS['anonymized']
 	if not os.path.exists(anonymized_dir):
@@ -59,10 +58,10 @@ def load_from_anonymized_csv():
 		csv_path = os.path.join(anonymized_dir, csv_file)
 		if os.path.exists(csv_path):
 			all_df[f'df{i}'] = pd.read_csv(csv_path)
-			print(f"{prefix}Loaded {csv_file}: {len(all_df[f'df{i}'])} rows")
+			print(f"Loaded {csv_file}: {len(all_df[f'df{i}'])} rows")
 		else:
-			print(f"{prefix}Warning: {csv_file} not found, skipping...")
-	
+			print(f"Warning: {csv_file} not found, skipping...")
+
 	if not all_df:
 		raise FileNotFoundError("No anonymized CSV files found in the anonymized directory")
 	
@@ -86,8 +85,7 @@ def run_data_preparation():
 	if sub_choice == "0":
 		return None
 	elif sub_choice == "1":
-		prefix = get_tree_prefix()
-		print(f"{prefix}Data Preparation Pipeline - From Raw Excel")
+		print("Data Preparation Pipeline - From Raw Excel")
 		# Step 1: Load data from Excel
 		all_df = load_data()
 
@@ -95,12 +93,11 @@ def run_data_preparation():
 		all_df = anonymize_data(all_df)
 		
 	elif sub_choice == "2":
-		prefix = get_tree_prefix()
-		print(f"{prefix}Data Preparation Pipeline - From Anonymized CSV")
+		print("Data Preparation Pipeline - From Anonymized CSV")
 		# Load from already anonymized CSV files
 		all_df = load_from_anonymized_csv()
-		print(f"{prefix}Anonymized data loaded successfully")
-		
+		print("Anonymized data loaded successfully")
+
 	else:
 		print("Invalid choice")
 		return None
