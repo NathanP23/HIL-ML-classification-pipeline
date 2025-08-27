@@ -3,7 +3,6 @@ Data loading and consolidation functionality
 """
 import pandas as pd
 from config.settings import COLUMN_MAPPINGS, FILES
-from core.utils.call_tracer import trace, get_tree_prefix
 
 
 

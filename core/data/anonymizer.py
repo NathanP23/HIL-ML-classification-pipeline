@@ -4,7 +4,6 @@ Data anonymization functionality
 import re
 import os
 import pandas as pd
-from core.utils.call_tracer import trace, get_tree_prefix
 
 
 def anonymize_national_id(text):
